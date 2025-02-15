@@ -1,1 +1,4 @@
 # 의존성 패키지 목록
+requests
+beautifulsoup4
+lxml
