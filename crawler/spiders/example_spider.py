@@ -25,7 +25,7 @@ class ExampleSpider:
 
     def crawl(self):
         """크롤링 실행"""
-        from crawler_project.urls import URLS
+        from crawler.urls import URLS
 
         for url in URLS:
             self.logger.info(f"Crawling {url}...")
