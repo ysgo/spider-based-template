@@ -2,15 +2,19 @@
 import os
 import json
 import time
+import schedule
+import threading
 from datetime import datetime
 
 class FileManager:
     """크롤링 데이터를 저장 및 로드하는 파일 관리 클래스"""
 
-    def __init__(self, base_dir="data", cleanup_days=30):
+    def __init__(self, base_dir="data", cleanup_days=30, log_file="deleted_files_log.json"):
         self.base_dir = base_dir
         self.cleanup_days = cleanup_days  # 정리할 기준 날짜 (예: 30일)
+        self.log_file = log_file  # 삭제된 파일 로그 파일
         os.makedirs(self.base_dir, exist_ok=True)  # 기본 저장 폴더 생성
+        self.deleted_files = self.load_deleted_files_log()  # 이전 삭제 기록 불러오기
 
     def _get_date_folder(self):
         """현재 날짜별 폴더를 반환 (예: 2025-02-16)"""
@@ -95,6 +99,44 @@ class FileManager:
 
         if deleted_files:
             print(f"🗑 삭제된 파일: {', '.join(deleted_files)}")
+            self.log_deleted_files(deleted_files)
         else:
             print("⚠️ 삭제할 파일이 없습니다.")
 
+    def log_deleted_files(self, deleted_files):
+        """삭제된 파일 목록을 로그 파일에 기록"""
+        log_entry = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "deleted_files": deleted_files
+        }
+
+        self.deleted_files.append(log_entry)
+        self.save_deleted_files_log()
+
+    def save_deleted_files_log(self):
+        """삭제된 파일 로그를 파일에 저장"""
+        with open(self.log_file, "w", encoding="utf-8") as log_file:
+            json.dump(self.deleted_files, log_file, ensure_ascii=False, indent=4)
+        print(f"📜 삭제 기록이 {self.log_file}에 저장되었습니다.")
+
+    def load_deleted_files_log(self):
+        """이전 삭제 기록을 불러오기"""
+        if os.path.exists(self.log_file):
+            with open(self.log_file, "r", encoding="utf-8") as log_file:
+                return json.load(log_file)
+        return []
+
+    def run_cleanup_scheduler(self):
+        """자동화된 파일 정리 작업을 스케줄링"""
+        schedule.every(1).day.at("00:00").do(self.cleanup_files)  # 매일 자정에 파일 정리
+
+        # 스케줄러가 백그라운드에서 실행되도록 스레드로 실행
+        def run():
+            while True:
+                schedule.run_pending()
+                time.sleep(1)
+
+        # 스케줄러를 별도의 스레드에서 실행
+        thread = threading.Thread(target=run)
+        thread.daemon = True  # 메인 프로그램 종료 시 스레드도 종료되도록 설정
+        thread.start()

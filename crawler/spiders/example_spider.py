@@ -9,6 +9,9 @@ class ExampleSpider:
         self.logger = Logger("example_spider")
         self.file_manager = FileManager()
         self.data = []  # 크롤링 데이터 저장
+        
+        # 자동화된 파일 정리 스케줄러 시작
+        self.file_manager.run_cleanup_scheduler()
 
     def fetch(self, url):
         """웹 페이지 요청 및 HTML 가져오기"""
