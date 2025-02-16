@@ -2,3 +2,7 @@
 from crawler.spiders import ExampleSpider
 
 spider = ExampleSpider()
+
+def get_spider():
+    from crawler.spiders.example_spider import ExampleSpider
+    return ExampleSpider()
